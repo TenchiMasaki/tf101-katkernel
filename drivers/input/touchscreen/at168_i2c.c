@@ -34,9 +34,9 @@
 #include <linux/slab.h>
 
 
-#define DRIVER_NAME	"at168_touch"
-#define TS_POLL_DELAY			4 /* ms delay between samples */
-#define TS_POLL_PERIOD			4 /* ms delay between samples */
+#define DRIVER_NAME			"at168_touch"
+#define TS_POLL_DELAY			2 /* ms delay between samples */
+#define TS_POLL_PERIOD			2 /* ms delay between samples */
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void at168_early_suspend(struct early_suspend *h);
@@ -49,20 +49,20 @@ struct at168_data {
 	struct i2c_client	*client;
 	struct i2c_client 	*read_client;
 	int			gpio_reset;
-	int 		gpio_irq;
+	int 			gpio_irq;
 	struct early_suspend	early_suspend;
 	struct delayed_work	work;
 };
 
 struct at168_event {
-	__u8	fingers;
-	__u8	old_fingers;
-	__be16	coord[2][2];
+	__u8			fingers;
+	__u8			old_fingers;
+	__be16			coord[2][2];
 };
 
 union at168_buff {
 	struct at168_event	data;
-	unsigned char	buff[sizeof(struct at168_event)];
+	unsigned char		buff[sizeof(struct at168_event)];
 };
 
 static int at168_read_registers(struct at168_data *touch, unsigned char reg, unsigned char* buffer, unsigned int len);
@@ -88,25 +88,24 @@ static void at168_work(struct work_struct *work)
 	ret = at168_read_registers(touch, AT168_TOUCH_NUM, event.buff, sizeof(event));
 	
 	input_report_key(touch->input_dev, BTN_TOUCH, (event.data.fingers == 1 || event.data.fingers == 2) );
-	//input_report_key(touch->input_dev, BTN_2, event.data.fingers == 2);
+	input_report_key(touch->input_dev, BTN_2, event.data.fingers == 2);
 
 	if (!event.data.fingers || (event.data.fingers > 2))
 		goto out;
 
 	for (i = 0; i < event.data.fingers; i++) {
-		input_report_abs(touch->input_dev, ABS_MT_POSITION_X,
-				 event.data.coord[i][0]);
-		input_report_abs(touch->input_dev, ABS_MT_POSITION_Y,
-				 event.data.coord[i][1]);
 		input_report_abs(touch->input_dev, ABS_MT_TRACKING_ID, i);
-		//input_report_abs(touch->input_dev, ABS_MT_TOUCH_MAJOR, 10);
-		//input_report_abs(touch->input_dev, ABS_MT_WIDTH_MAJOR, 20);
+                input_report_abs(touch->input_dev, ABS_MT_TOUCH_MAJOR, 10);
+                input_report_abs(touch->input_dev, ABS_MT_WIDTH_MAJOR, 20);
+		input_report_abs(touch->input_dev, ABS_MT_POSITION_X, event.data.coord[i][0]);
+		input_report_abs(touch->input_dev, ABS_MT_POSITION_Y, event.data.coord[i][1]);
 		input_mt_sync(touch->input_dev);
 	}
 	if(event.data.fingers == 0)
 	{
-		//input_report_abs(touch->input_dev, ABS_MT_TOUCH_MAJOR, 0);
-		//input_report_abs(touch->input_dev, ABS_MT_WIDTH_MAJOR, 0);
+		input_report_key(touch->input_dev, BTN_TOUCH, 0);
+		input_report_abs(touch->input_dev, ABS_MT_TOUCH_MAJOR, 0);
+		input_report_abs(touch->input_dev, ABS_MT_WIDTH_MAJOR, 0);
 		input_mt_sync(touch->input_dev);
 	}
 out:
@@ -122,8 +121,7 @@ static irqreturn_t at168_irq(int irq, void *dev_id)
 {
 	struct at168_data *ts = dev_id;
 	disable_irq_nosync(ts->gpio_irq);
-	schedule_delayed_work(&ts->work,
-		      msecs_to_jiffies(TS_POLL_DELAY));
+	schedule_delayed_work(&ts->work, msecs_to_jiffies(TS_POLL_DELAY));
 
 	return IRQ_HANDLED;
 }
@@ -135,17 +133,18 @@ static int at168_read_registers(struct at168_data *touch, unsigned char reg, uns
 	msgs[0].addr = touch->client->addr;
 	msgs[0].len = 1;
 	msgs[0].buf = &reg;
-	msgs[0].flags = 0;
+	msgs[0].flags = 0;//I2C_M_REV_DIR_ADDR;
 	
 	msgs[1].addr = touch->client->addr;
 	msgs[1].len=len;
 	msgs[1].buf = buffer;
-	msgs[1].flags = I2C_M_RD;
+	msgs[1].flags = I2C_M_RD; //same as 0x1 (per .32)
 	
 	do
 	{
 		ret = i2c_transfer(touch->client->adapter, msgs, 2);
-	} while(ret == EAGAIN || ret == ETIMEDOUT);
+	} 
+	while(ret == EAGAIN || ret == ETIMEDOUT);
 	return ret;
 }
 
@@ -157,8 +156,8 @@ static ssize_t at168_dump_registers(struct device *dev, struct device_attribute 
 	unsigned char initdata[NUM_REGISTERS] = {};
 	char *curr_buf;
 	struct at168_data *touch = i2c_get_clientdata(to_i2c_client(dev));
-	ret = at168_read_registers(touch, AT168_TOUCH_NUM, initdata, NUM_REGISTERS);
 	int cnt=0;
+	ret = at168_read_registers(touch, AT168_TOUCH_NUM, initdata, NUM_REGISTERS);
 	if(ret > 0)
 	{
 		curr_buf = buf;
@@ -172,7 +171,6 @@ static ssize_t at168_dump_registers(struct device *dev, struct device_attribute 
 	return written;
 }
 
-
 static DEVICE_ATTR(dump_registers, 0664, at168_dump_registers, NULL);
 */
 
@@ -185,6 +183,8 @@ static int at168_probe(struct i2c_client *client,
 	unsigned char initdata[AT168_VERSION_PROTOCOL - AT168_XMAX_LO + 1] = {};
 	int ret = 0;
 	int j = 0;
+	int version, XMaxPosition, YMaxPosition;
+	//int XMinPosition, YMinPosition;
 
 	touch = kzalloc(sizeof(struct at168_data), GFP_KERNEL);
 	if (!touch) {
@@ -207,7 +207,7 @@ static int at168_probe(struct i2c_client *client,
 		if (!ret)
 			touch->gpio_reset = pdata->gpio_reset;
 		else
-			dev_warn(&client->dev, "unable to configure GPIO\n");
+			dev_warn(&client->dev, "unable to configure GPIO for reset at168 \n");
 	}
 
 	input_dev = input_allocate_device();
@@ -231,13 +231,14 @@ static int at168_probe(struct i2c_client *client,
 	{
 		printk("at168_touch: InitData[%d] = 0x%x---\n", j, initdata[j]);
 		j++;
-	}while(j < 8);
+	}
+	while(j < 8);
 	
-	int version = ((initdata[4] << 24) | (initdata[5] << 16) | (initdata[6] << 8) | (initdata[7]) );
-	/*int XMinPosition = 0; //AT168_MIN_X;
-	int YMinPosition = 0; //AT168_MIN_Y;*/
-	int XMaxPosition = ((initdata[1] << 8) | (initdata[0])); //AT168_MAX_X;
-	int YMaxPosition = ((initdata[3] << 8) | (initdata[2])); //AT168_MAX_Y;
+	version = ((initdata[4] << 24) | (initdata[5] << 16) | (initdata[6] << 8) | (initdata[7]) );
+	/*XMinPosition = 0; //AT168_MIN_X;
+	YMinPosition = 0; //AT168_MIN_Y;*/
+	XMaxPosition = ((initdata[1] << 8) | (initdata[0])); //AT168_MAX_X;
+	YMaxPosition = ((initdata[3] << 8) | (initdata[2])); //AT168_MAX_Y;
 
 	printk("at168_touch: now FW xMAX is %d   yMAx is %d Version is %x.\n",XMaxPosition, YMaxPosition, version);
 
@@ -248,18 +249,18 @@ static int at168_probe(struct i2c_client *client,
 	set_bit(EV_KEY, touch->input_dev->evbit);
 	set_bit(EV_ABS, touch->input_dev->evbit);
 	set_bit(BTN_TOUCH, touch->input_dev->keybit);
-	set_bit(BTN_2, touch->input_dev->keybit);
+	//set_bit(BTN_2, touch->input_dev->keybit);
 
 	/* expose multi-touch capabilities */
-	set_bit(ABS_MT_POSITION_X, touch->input_dev->keybit);
+	/*set_bit(ABS_MT_POSITION_X, touch->input_dev->keybit);
 	set_bit(ABS_MT_POSITION_Y, touch->input_dev->keybit);
 	set_bit(ABS_X, touch->input_dev->keybit);
-	set_bit(ABS_Y, touch->input_dev->keybit);
+	set_bit(ABS_Y, touch->input_dev->keybit);*/
 
 	input_set_abs_params(touch->input_dev, ABS_X, 0, XMaxPosition, 0, 0);
 	input_set_abs_params(touch->input_dev, ABS_Y, 0, YMaxPosition, 0, 0);
-	input_set_abs_params(touch->input_dev, ABS_HAT0X, 0, XMaxPosition, 0, 0);
-	input_set_abs_params(touch->input_dev, ABS_HAT0Y, 0, YMaxPosition, 0, 0);
+	/*input_set_abs_params(touch->input_dev, ABS_HAT0X, 0, XMaxPosition, 0, 0);
+	input_set_abs_params(touch->input_dev, ABS_HAT0Y, 0, YMaxPosition, 0, 0);*/
 	/*input_set_abs_params(touch->input_dev, ABS_HAT1X, 0, XMaxPosition, 0, 0);
 	input_set_abs_params(touch->input_dev, ABS_HAT1Y, 0, YMaxPosition, 0, 0);*/
 
@@ -267,8 +268,12 @@ static int at168_probe(struct i2c_client *client,
 	input_set_abs_params(touch->input_dev, ABS_MT_POSITION_Y, 0, YMaxPosition, 0, 0); 
 	input_set_abs_params(touch->input_dev, ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0);
 	input_set_abs_params(touch->input_dev, ABS_MT_WIDTH_MAJOR, 0, 200, 0, 0);
-	//input_set_abs_params(touch->input_dev, ABS_MT_TRACKING_ID, 0, 1, 1, 0);
+	input_set_abs_params(touch->input_dev, ABS_MT_TRACKING_ID, 0, 1, 1, 0);
 	
+
+        input_set_abs_params(touch->input_dev, ABS_X, 0, XMaxPosition, 0, 0);
+        input_set_abs_params(touch->input_dev, ABS_Y, 0, YMaxPosition, 0, 0);
+	input_set_abs_params(touch->input_dev, ABS_PRESSURE, 0, 1, 0, 0);
 
 	ret = input_register_device(touch->input_dev);
 	if (ret) {
@@ -322,7 +327,7 @@ fail_i2c_or_register:
 static int at168_suspend(struct i2c_client *client, pm_message_t state)
 {
 	struct at168_data *touch = i2c_get_clientdata(client);
-	int ret;
+//	int ret;
 
 	if (WARN_ON(!touch))
 		return -EINVAL;
@@ -330,19 +335,20 @@ static int at168_suspend(struct i2c_client *client, pm_message_t state)
 	disable_irq(client->irq);
 
 	/* disable scanning and enable deep sleep */
-/*	ret = i2c_smbus_write_byte_data(client, CSR, CSR_SLEEP_EN);
+/*
+	ret = i2c_smbus_write_byte_data(client, CSR, CSR_SLEEP_EN);
 	if (ret < 0) {
 		dev_err(&client->dev, "%s: sleep enable fail\n", __func__);
 		return ret;
-	}*/
-
+	}
+*/
 	return 0;
 }
 
 static int at168_resume(struct i2c_client *client)
 {
 	struct at168_data *touch = i2c_get_clientdata(client);
-	int ret = 0;
+//	int ret = 0;
 
 	if (WARN_ON(!touch))
 		return -EINVAL;
@@ -350,14 +356,15 @@ static int at168_resume(struct i2c_client *client)
 	at168_reset(touch);
 
 	/* enable scanning and disable deep sleep */
-/*	ret = i2c_smbus_write_byte_data(client, C_FLAG, 0);
+/*
+	ret = i2c_smbus_write_byte_data(client, C_FLAG, 0);
 	if (ret >= 0)
 		ret = i2c_smbus_write_byte_data(client, CSR, CSR_SCAN_EN);
 	if (ret < 0) {
 		dev_err(&client->dev, "%s: scan enable fail\n", __func__);
 		return ret;
-	}*/
-
+	}
+*/
 	enable_irq(client->irq);
 
 	return 0;
@@ -427,7 +434,8 @@ static int __devinit at168_init(void)
 
 	e = i2c_add_driver(&at168_driver);
 	if (e != 0) {
-		pr_err("%s: failed to register with I2C bus with "
+	   printk("%s: failed to register with I2C bus with error: 0x%x\n", e);
+	   pr_err("%s: failed to register with I2C bus with "
 		       "error: 0x%x\n", __func__, e);
 	}
 	return e;
