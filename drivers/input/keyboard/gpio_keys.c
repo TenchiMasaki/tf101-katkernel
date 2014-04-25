@@ -465,10 +465,11 @@ static int __devinit gpio_keys_setup_key(struct platform_device *pdev,
 	int irq, error;
 
 //lidpatch
+#if 0
 	if ( lidpatch_enabled && (button->type == EV_SW) && (ASUSGetProjectID() == 101) ) {
 	button->active_low = 1;
 	}
-
+#endif
 	setup_timer(&bdata->timer, gpio_keys_timer, (unsigned long)bdata);
 	INIT_WORK(&bdata->work, gpio_keys_work_func);
 

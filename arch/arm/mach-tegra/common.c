@@ -152,8 +152,8 @@ static __initdata struct tegra_clk_init_table common_clk_init_table[] = {
 #if !APPLY_HC_CLOCK_SETTINGS
 	{ "mpe",	"pll_c",	0,		false },
 	{ "epp",	"pll_c",	0,		false },
-//	{ "vi_sensor",	"pll_c",	0,		false },
-//	{ "vi",		"pll_c",	0,		false },
+	{ "vi_sensor",	"pll_c",	0,		false },
+	{ "vi",		"pll_c",	0,		false },
 	{ "2d",		"pll_c",	0,		false },
 	{ "3d",		"pll_c",	0,		false },
 #endif

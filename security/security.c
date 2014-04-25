@@ -4,6 +4,7 @@
  * Copyright (C) 2001 WireX Communications, Inc <chris@wirex.com>
  * Copyright (C) 2001-2002 Greg Kroah-Hartman <greg@kroah.com>
  * Copyright (C) 2001 Networks Associates Technology, Inc <ssmalley@nai.com>
+ * Copyright (c) 2014 XPerience(R) Project
  *
  *	This program is free software; you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by
@@ -17,6 +18,8 @@
 #include <linux/kernel.h>
 #include <linux/security.h>
 #include <linux/ima.h>
+
+#define MAX_LSM_XATTR	1
 
 /* Boot-time LSM user choice */
 static __initdata char chosen_lsm[SECURITY_NAME_MAX + 1] =
@@ -126,6 +129,26 @@ int __init register_security(struct security_operations *ops)
 }
 
 /* Security operations */
+
+int security_binder_set_context_mgr(struct task_struct *mgr)
+{
+	return security_ops->binder_set_context_mgr(mgr);
+}
+
+int security_binder_transaction(struct task_struct *from, struct task_struct *to)
+{
+	return security_ops->binder_transaction(from, to);
+}
+
+int security_binder_transfer_binder(struct task_struct *from, struct task_struct *to)
+{
+	return security_ops->binder_transfer_binder(from, to);
+}
+
+int security_binder_transfer_file(struct task_struct *from, struct task_struct *to, struct file *file)
+{
+	return security_ops->binder_transfer_file(from, to, file);
+}
 
 int security_ptrace_access_check(struct task_struct *child, unsigned int mode)
 {
@@ -348,6 +371,37 @@ int security_inode_init_security(struct inode *inode, struct inode *dir,
 						 len);
 }
 EXPORT_SYMBOL(security_inode_init_security);
+
+int security_new_inode_init_security(struct inode *inode, struct inode *dir,
+					const struct qstr *qstr,
+					const initxattrs initxattrs, void *fs_data)
+{
+	struct xattr new_xattrs[MAX_LSM_XATTR + 1];
+	struct xattr *lsm_xattr;
+	int ret;
+
+	if (unlikely(IS_PRIVATE(inode)))
+		return -EOPNOTSUPP;
+
+	memset(new_xattrs, 0, sizeof new_xattrs);
+	if (!initxattrs)
+		return security_ops->inode_init_security(inode, dir, qstr,
+							 NULL, NULL, NULL);
+	lsm_xattr = new_xattrs;
+	ret = security_ops->inode_init_security(inode, dir, qstr,
+						&lsm_xattr->name,
+						&lsm_xattr->value,
+						&lsm_xattr->value_len);
+	if (ret)
+		goto out;
+	ret = initxattrs(inode, new_xattrs, fs_data);
+out:
+	kfree(lsm_xattr->name);
+	kfree(lsm_xattr->value);
+
+	return (ret == -EOPNOTSUPP) ? 0 : ret;
+}
+EXPORT_SYMBOL(security_new_inode_init_security);
 
 #ifdef CONFIG_SECURITY_PATH
 int security_path_mknod(struct path *dir, struct dentry *dentry, int mode,

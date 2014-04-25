@@ -31,7 +31,6 @@
 #include <linux/cpufreq.h>
 
 #include <mach/iomap.h>
-#include <mach/board-ventana-misc.h>
 #include <mach/dc.h>
 #include <mach/pinmux.h>
 
@@ -700,6 +699,7 @@ static void tegra2_pll_clk_init(struct clk *c)
 {
 	u32 val = clk_readl(c->reg + PLL_BASE);
 
+#if 0
 	/* TODO: The following is only for HSD. */
 	if(!strcmp(c->name, "pll_c")) {
 		u32 pll_c_mul;
@@ -733,6 +733,7 @@ static void tegra2_pll_clk_init(struct clk *c)
 		val = val | (pll_c_mul << PLL_BASE_DIVN_SHIFT);
 		clk_writel( val ,c->reg + PLL_BASE);
 	}
+#endif
 
 	c->state = (val & PLL_BASE_ENABLE) ? ON : OFF;
 

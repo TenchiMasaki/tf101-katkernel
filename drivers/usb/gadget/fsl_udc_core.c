@@ -207,7 +207,8 @@ static void cable_detection_work_handler(struct work_struct *w)
 		s_cable_info.ac_connected = 0;
 		s_cable_info.ac_15v_connected = 0;
 		gpio_limit_set0_set(0);
-#if BATTERY_CALLBACK_ENABLED
+#if 0
+//BATTERY_CALLBACK_ENABLED
 		battery_callback(s_cable_info.cable_status);
 #endif
 #if TOUCH_CALLBACK_ENABLED
@@ -315,7 +316,8 @@ static void cable_detection_work_handler(struct work_struct *w)
 
 				gpio_limit_set0_set(1);
 		}
-		#if BATTERY_CALLBACK_ENABLED
+		#if 0
+//BATTERY_CALLBACK_ENABLED
 		battery_callback(s_cable_info.cable_status);
 		#endif
 

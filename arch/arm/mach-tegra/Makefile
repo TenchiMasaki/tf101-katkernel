@@ -18,7 +18,7 @@ else
 obj-y                                   += tegra3_clocks.o
 obj-y                                   += timer-t3.o
 endif
-#obj-y                                   += gpio.o
+obj-y                                   += gpio.o
 obj-y                                   += pinmux.o
 obj-y                                   += devices.o
 obj-y                                   += delay.o
@@ -170,4 +170,34 @@ obj-${CONFIG_MACH_TEGRA_ENTERPRISE}     += board-enterprise-sensors.o
 
 obj-${CONFIG_TEGRA_BB_XMM_POWER}        += baseband-xmm-power.o
 obj-${CONFIG_TEGRA_BB_XMM_POWER2}       += baseband-xmm-power2.o
+
+# Adam arch drivers
+obj-${CONFIG_MACH_ADAM}              += board-adam-aes.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-audio.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-bootinfo.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-bt.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-camera.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-clocks.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-gpu.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-gsm.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-i2c.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-keyboard.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-memory.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-nand.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-pinmux.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-power.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-sdhci.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-sensors.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-spi.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-touch.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-uart.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-usb.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-wake.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-wdt.o
+#obj-${CONFIG_MACH_ADAM}              += board-adam-wlan.o
+obj-${CONFIG_MACH_ADAM}              += board-adam.o
+# adam power management drivers
+obj-${CONFIG_MACH_ADAM}              += board-adam-pm-camera.o
+obj-${CONFIG_MACH_ADAM}              += board-adam-pm-gsm.o
+#obj-${CONFIG_MACH_ADAM}              += board-adam-pm-wlan.o
 

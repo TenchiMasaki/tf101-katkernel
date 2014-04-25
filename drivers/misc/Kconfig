@@ -552,6 +552,12 @@ config KERNEL_RAMDUMP
         bool "kernel ramdump driver"
         default y
 
+config SENSORS_MMC31XX
+        boolean "MMC31XX Magnetic Compass Driver Support"
+        depends on I2C
+        ---help---
+        Say Y here to get support for MEMSIC magnetic sensor.
+
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"

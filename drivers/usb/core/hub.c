@@ -3405,7 +3405,7 @@ static void hub_events(void)
 	 * Not the most efficient, but avoids deadlocks.
 	 */
 	printk("hub_events+\n");
-	mutex_lock(&usb_mutex);
+//	mutex_lock(&usb_mutex);
 	while (1) {
 
 		/* Grab the first entry at the beginning of the list */
@@ -3646,7 +3646,7 @@ static void hub_events(void)
 
         } /* end while (1) */
 	printk("hub_events-\n");
-	mutex_unlock(&usb_mutex);
+//	mutex_unlock(&usb_mutex);
 }
 
 static int hub_thread(void *__unused)

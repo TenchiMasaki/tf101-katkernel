@@ -281,6 +281,14 @@ mutex_lock_nested(struct mutex *lock, unsigned int subclass)
 
 EXPORT_SYMBOL_GPL(mutex_lock_nested);
 
+void __sched
+_mutex_lock_nest_lock(struct mutex *lock, struct lockdep_map *nest)
+{
+	might_sleep();
+	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0, nest, _RET_IP_);
+}
+
+EXPORT_SYMBOL_GPL(_mutex_lock_nest_lock);
 int __sched
 mutex_lock_killable_nested(struct mutex *lock, unsigned int subclass)
 {

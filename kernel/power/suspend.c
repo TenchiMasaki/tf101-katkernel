@@ -30,13 +30,14 @@
 
 #include "power.h"
 
+#if 0
 extern int asusec_suspend_hub_callback2(void);
 extern int asusec_close_keyboard(void);
 extern int asusec_resume(int);
 extern int hub_suspended;
 //extern void reload_asusec();
 extern void stop_dock();
-
+#endif
 const char *const pm_states[PM_SUSPEND_MAX] = {
 #ifdef CONFIG_EARLYSUSPEND
 	[PM_SUSPEND_ON]		= "on",
@@ -257,7 +258,7 @@ int suspend_devices_and_enter(suspend_state_t state)
 	return error;
 
  Recover_platform:
-	asusec_resume(0);
+	//asusec_resume(0);
 	if (suspend_ops->recover)
 		suspend_ops->recover();
 	goto Resume_devices;
@@ -361,9 +362,11 @@ int enter_state(suspend_state_t state)
 	pr_debug("PM: Preparing system for %s sleep\n", pm_states[state]);
 	error = suspend_prepare();
 	if (error) {
+#if 0
 		if (dock==1) {
 			asusec_resume(0);
 		}
+#endif
 		goto Unlock;
 	}
 

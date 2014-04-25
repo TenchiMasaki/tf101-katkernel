@@ -21,13 +21,17 @@
 #include <asm/mach/mmc.h>
 
 struct tegra_sdhci_platform_data {
+	const char *clk_id;
 	int wow_gpio;
+	int force_hs;
 	int cd_gpio;
 	int wp_gpio;
 	int power_gpio;
+	int bus_width;
 	int is_8bit;
 	unsigned int max_clk_limit;
 	unsigned int tap_delay;
+	int has_no_vreg;      /* 1=No voltage regulator */
 	struct mmc_platform_data mmc_data;
 };
 
