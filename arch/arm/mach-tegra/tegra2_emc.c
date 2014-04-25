@@ -140,7 +140,7 @@ long tegra_emc_round_rate(unsigned long rate)
 	unsigned long distance = ULONG_MAX;
 
 	if (!tegra_emc_table){
-		printk("%s: no emc table\n", __func__);
+		//printk("%s: no emc table\n", __func__);
 		return -EINVAL;
 	}
 
